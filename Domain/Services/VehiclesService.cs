@@ -6,7 +6,7 @@ using minimal_api.Interfaces;
 
 namespace minimal_api.Services;
 
-public class VehicleService : IVehiclesService
+public class VehicleService : IVehicleService
 {
     private readonly DatabaseContext _context;
 
@@ -15,7 +15,7 @@ public class VehicleService : IVehiclesService
         _context = context;
     }
 
-    public List<Vehicle> All(int pagina = 1, string? nome = null, string? marca = null)
+    public List<Vehicle> All(int? pagina = 1, string? nome = null, string? marca = null)
     {
         var query = _context.Vehicles.AsQueryable();
 
@@ -26,8 +26,10 @@ public class VehicleService : IVehiclesService
 
         int itensPorPagina = 10;
 
-        query = query.Skip((pagina - 1) * itensPorPagina).Take(itensPorPagina);
-
+        if (pagina != null)
+        {
+            query = query.Skip(((int)pagina - 1) * itensPorPagina).Take(itensPorPagina);
+        }
         return query.ToList();
     }
 
@@ -43,7 +45,7 @@ public class VehicleService : IVehiclesService
         _context.SaveChanges();
     }
 
-    public Vehicle? SearchVehicleById(int id)
+    public Vehicle? FindVehicleById(int id)
     {
         return _context.Vehicles.Where(v => v.Id == id).FirstOrDefault();
     }
