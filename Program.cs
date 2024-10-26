@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.EntityFrameworkCore;
 using minimal_api.Databases;
 using minimal_api.DTOs;
@@ -41,11 +42,77 @@ app.MapPost("/admins/login", ([FromBody] LoginDTO loginDTO, IAdminService adminS
         return Results.Unauthorized();
     }
 }).WithTags("Admins");
+
+app.MapPost("/admins/login", ([FromBody] AdminDTO adminDTO, IAdminService adminService) =>{
+    var validacao = new ValidationErrors(){
+        Messages = new List<string>()
+    };
+
+    if (string.IsNullOrEmpty(adminDTO.Email))
+    {
+        validacao.Messages.Add("O e-mail não pode ser vazio!");
+    }
+
+    if (string.IsNullOrEmpty(adminDTO.Senha))
+    {
+        validacao.Messages.Add("A senha não pode ser vazia!");
+    }
+
+    if (string.IsNullOrEmpty(adminDTO.Perfil))
+    {
+        validacao.Messages.Add("O perfil não pode ser vazio!");
+    }
+
+    if (validacao.Messages.Count > 0)
+    {
+        return Results.BadRequest(validacao);
+    }
+
+    var admin = new Admin{
+        Email = adminDTO.Email,
+        Senha = adminDTO.Senha,
+        Perfil = adminDTO.Perfil.ToString(),
+    };
+
+    adminService.Include
+
+}).WithTags("Admins");
 #endregion
 
 #region Vehicles
+ValidationErrors validateDTO(VehicleDTO vehicleDTO)
+{
+    var validacao = new ValidationErrors(){
+        Messages = new List<string>()
+    };
+
+    if (string.IsNullOrEmpty(vehicleDTO.Nome))
+    {
+        validacao.Messages.Add("O nome não pode ser vazio!");
+    }
+
+    if (string.IsNullOrEmpty(vehicleDTO.Marca))
+    {
+        validacao.Messages.Add("A marca não pode ser vazia!");
+    }
+
+    if (vehicleDTO.Ano < 2000)
+    {
+        validacao.Messages.Add("Veículo muito antigo, aceito somente anos superiores a 2000.");
+    }
+
+    return validacao;
+}
+
 app.MapPost("/vehicles", ([FromBody] VehicleDTO vehicleDTO, IVehicleService vehicleService) =>{
-    
+
+    var validacao = validateDTO(vehicleDTO);
+
+    if (validacao.Messages.Count > 0)
+    {
+        return Results.BadRequest(validacao);
+    }
+
     var vehicle = new Vehicle{
         Nome = vehicleDTO.Nome,
         Marca = vehicleDTO.Marca,
@@ -83,6 +150,13 @@ app.MapPut("/vehicles/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicl
     if (vehicle == null)
     {
         return Results.NotFound();
+    }
+
+    var validacao = validateDTO(vehicleDTO);
+    
+    if (validacao.Messages.Count > 0)
+    {
+        return Results.BadRequest(validacao);
     }
 
     vehicle.Nome = vehicleDTO.Nome;
